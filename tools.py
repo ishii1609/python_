@@ -9,6 +9,9 @@ def get_city_weather(city):
    response = requests.get(url,timeout=10)
    return response.text
    
+def mycity():
+    return "My city is delhi "
+
 TOOLS=[
     {
         "type":"function",
@@ -41,13 +44,30 @@ TOOLS=[
             }
         }
 
-    }
-]
+    },
+    
+    {
+        "type":"function",
+        "function":{
+            "name":"mycity",
+            "description":"Get the name of my city",
+            "parameters":{
+                "type":"object",
+                "properties":{
+                   
+                }
+            }
+        }
 
+    },
+
+
+]
 
 
 #MAP BNAYA SO THAT ACTUAL FN Ka access kr sku throuh name
 FUNCTION_NAME_TO_FUNCTION_MAP = {
     "get_current_time": get_current_time,
-    "get_city_weather": get_city_weather
+    "get_city_weather": get_city_weather,
+    "mycity": mycity
 }

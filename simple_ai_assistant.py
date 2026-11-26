@@ -9,43 +9,55 @@ client = OpenAI(
     api_key=os.getenv("API_KEY")#cuz ollma doesnt need api key
 )
 messages=[]
+MAX_STEPS=5
 messages.append({"role": "system", "content": "You are a helpful assistant.and you will answer in very short like 1-2 lines "})
 while(True):
     user_input=input("\n User: ")
     messages.append({"role": "user", "content": user_input})
-    response=client.chat.completions.create(
-    model=os.getenv("MODEL"),
 
-    messages=messages ,  
-    tools=TOOLS    
-)
+  #tool-call-chaining
+    for step in range(MAX_STEPS):
+       response=client.chat.completions.create(
+       model=os.getenv("MODEL"),
+       messages=messages ,  
+       tools=TOOLS    
+       )
 
-    msg=response.choices[0].message
-    if msg.tool_calls:
+   
+       msg=response.choices[0].message
+       if not msg.tool_calls:
+          break 
        messages.append(msg) 
        
        for tool_call in msg.tool_calls:
           func_name=tool_call.function.name
-          func_args=json.loads(tool_call.function.arguments) 
-          fn=FUNCTION_NAME_TO_FUNCTION_MAP[func_name]
-          result=fn(**func_args)
+          func_args={}
+          try:
+             func_args=json.loads(tool_call.function.arguments) 
+             fn=FUNCTION_NAME_TO_FUNCTION_MAP[func_name]
+             result=fn(**func_args)
+          except Exception as e:
+             result=f"Error while calling tool {func_name} with arguments {func_args}: {str(e)}"  
         
           messages.append({
             "role":"tool",
             "tool_id":tool_call.id,
             "content":str(result)
           })
-    #2nd call
-    response = client.chat.completions.create(
-        model=os.getenv("MODEL"), 
-        messages=messages
-    )  
-
-    msg=response.choices[0].message 
+    
+    else:
+       fallback="sorry couldnt complete within step limit"  
+       messages.append({
+        "role":"assistant",
+        "content":fallback
+      })
+       print("\n Assistant: "+ fallback)
+       continue    
 
     messages.append({
     "role":"assistant",
     "content":msg.content
-    })
+    })#python m while k bhr access ho skt avariablre so am accessing msg
 
     print("\n Assistant: "+ msg.content)
+    
